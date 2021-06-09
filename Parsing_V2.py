@@ -30,20 +30,23 @@ class data:
         response = R.get(self.strURL, headers={'User-Agent': UserAgent().chrome})
         self.soup = BS(response.content, "html.parser")
 
-    def getClassContentCSV(self, strTagName ,strClassName,strPath = r'C:\Users\misha\Documents\parsing.csv'):
+    def getClassContent(self, strTagName ,strClassName,strPath = r'C:\Users\misha\Documents\parsing.csv'):
         soupTitle = self.soup.find_all(strTagName, class_= strClassName)
         for element in soupTitle:
-            a = element.text
             listInfo = data.getContentList(element.text)
             data.makeCSVFile(strPath, listInfo)
-            # print(listInfo)
             data.makeTextFile(listInfo)
    
     def getContetFromNextWebs(intDepth,strURL,strTagName, strClassName):
         for i in range(intDepth):
-            dataObj = data(strURL+str(i))
-            dataObj.getClassContentCSV(strTagName, strClassName)
-            time.sleep(0.5)                
+            try:
+                dataObj = data(strURL+str(i))
+            except Exception :
+                print(f"Порт {i} не существует !")
+            else:
+                print(f"Порт {i} обработан !")
+                dataObj.getClassContent(strTagName, strClassName)
+                time.sleep(0.5)                
                 
     def getAllNewLineInList(strText):
         listNewLinePlace = [0]    
@@ -53,7 +56,6 @@ class data:
             index = strText.find('\n', index+1, len(strText))
             listNewLinePlace.append(index)
             intLineCount += 1
-        # print('\n',listNewLinePlace)
         return listNewLinePlace
         
     def getContentList(strText):
@@ -68,12 +70,17 @@ class data:
         with open(r'C:\Users\misha\Documents\parsing.txt', 'a+') as File:
             for i in range(len(listInfo)):
                 File.write(listInfo[i])
-            # File.write('\n')
+    
+    def makeFileHeadline(strPath = r'C:\Users\misha\Documents\parsing.csv',listHeadline = ["Port(s)", "Protocol","Service","Details","Source"]):
+        with open(strPath, 'w', newline='') as File:
+            writer = csv.writer(File, delimiter=';')
+            writer.writerow(listHeadline)
 
     def makeCSVFile(strPath,listInfo):
-        with open(strPath, 'a+', encoding='utf-8') as File:
-            writer = csv.writer(File, delimiter = ",", lineterminator="\r")
-            writer.writerows(listInfo)
+        with open(strPath, 'a+', newline='') as File:
+            writer = csv.writer(File, delimiter=';')
+            writer.writerow(listInfo)
+
         
     def getAllHref(self):
         for i in self.soup.find_all('a', href=True):
@@ -84,27 +91,17 @@ class data:
         print(self.listConditionalNetLinks)
  
 def main():    
-    print(' '*6 +'PROGRAMM START WORK\n' + '-'*30)
-    
-    # strURL = "https://www.habr.com/"
-    # strTagName = 'a'
-    # strClassName = "post__title_link"
-    
+    print(' '*6 +'PROGRAMM START WORK\n' + '-'*30)    
+
     strURL = 'https://www.speedguide.net/port.php?port='
     strTagName = 'tr'
     strClassName = "port"
     intDepth = 5
     
-    # strPath = r'C:\Users\misha\Documents\parsing.xlsx'
-    # strPath = r'C:\Users\misha\Documents\parsing.csv'
-    
-    # dataObj = data(strURL)
-    # dataObj.getClassContentXLSX(strTagName, strClassName)
-    # dataObj.getClassContentCSV(strTagName, strClassName)
-    
+    data.makeFileHeadline()
     data.getContetFromNextWebs(intDepth,strURL,strTagName,strClassName)
-    
-    # dataObj.getAllHref()
+    strClassName = "port-outer"
+    data.getContetFromNextWebs(intDepth,strURL,strTagName,strClassName)
     
     print('-'*30+'\n'+' '*6 +'PROGRAMM END WORK')
     
